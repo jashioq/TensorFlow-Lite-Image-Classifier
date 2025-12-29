@@ -53,7 +53,7 @@ interpreter.run(tensorImage.buffer, output)
 - Architecture: MobileNetV2 (53 layers, 3.4M parameters)
 - Output: 1000 probabilities, one for each ImageNet class
 
-The network extracts features through convolutional layers and outputs a probability distribution where all values sum to 1.0.
+The network extracts features through convolutional layers and outputs a probability distribution where all values sum to 1.
 
 ---
 
