@@ -125,7 +125,7 @@ fun ClassificationScreen(viewModel: ClassificationViewModel) {
             ResultsBottomSheet(
                 bitmap = resultsState.bitmap,
                 results = resultsState.result,
-                inferenceTime = resultsState.inferenceTime
+                processingTime = resultsState.processingTime
             )
         }
     }

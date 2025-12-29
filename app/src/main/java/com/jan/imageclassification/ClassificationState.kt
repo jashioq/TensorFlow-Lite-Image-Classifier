@@ -17,11 +17,11 @@ sealed class ClassificationState {
      *
      * @param result List of top predictions with confidence scores
      * @param bitmap The classified image to show in the results sheet
-     * @param inferenceTime How long the model took to classify in milliseconds
+     * @param processingTime How long the model took to classify in milliseconds
      */
     data class ShowingResults(
         val result: List<ClassificationResult>,
         val bitmap: Bitmap,
-        val inferenceTime: Long
+        val processingTime: Long
     ) : ClassificationState()
 }

@@ -68,7 +68,7 @@ class TFLiteClassifier(private val context: Context) {
      * Runs the image through the model and returns predictions.
      *
      * @param bitmap The image to classify
-     * @return Pair of (top 5 predictions, inference time in ms)
+     * @return Pair of (top 5 predictions, processing time in ms)
      */
     fun classify(bitmap: Bitmap): Pair<List<ClassificationResult>, Long> {
         // Resize to what the model expects
@@ -86,7 +86,7 @@ class TFLiteClassifier(private val context: Context) {
 
         interpreter.run(tensorImage.buffer, output)
 
-        val inferenceTime = System.currentTimeMillis() - startTime
+        val processingTime = System.currentTimeMillis() - startTime
 
         // Sort by confidence and take top 5
         val results = output[0]
@@ -99,6 +99,6 @@ class TFLiteClassifier(private val context: Context) {
             .sortedByDescending { it.confidence }
             .take(MAX_RESULTS)
 
-        return results to inferenceTime
+        return results to processingTime
     }
 }

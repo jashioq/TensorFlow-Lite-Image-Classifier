@@ -45,14 +45,14 @@ class ClassificationViewModel(application: Application) : AndroidViewModel(appli
         viewModelScope.launch {
             _state.value = ClassificationState.Processing
 
-            val (results, inferenceTime) = withContext(Dispatchers.Default) {
+            val (results, processingTime) = withContext(Dispatchers.Default) {
                 classifier.classify(bitmap)
             }
 
             _state.value = ClassificationState.ShowingResults(
                 result = results,
                 bitmap = bitmap,
-                inferenceTime = inferenceTime
+                processingTime = processingTime
             )
         }
     }

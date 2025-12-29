@@ -1,16 +1,14 @@
-# Offline Image Classification
+# Offline image classification app
 
 A simple Android app that classifies images using TensorFlow Lite and MobileNetV2. Everything runs on-device with no internet required.
 
-<img src="image_classifier.gif" width="300" />
-
-## How It Works
+## How it works
 
 This app transforms images into AI predictions through a 4-step pipeline:
 
 ---
 
-### **Step 1: Image Preprocessing**
+### **Step 1: Image preprocessing**
 
 The raw image is converted to the format MobileNetV2 expects:
 
@@ -39,7 +37,7 @@ This centers the data around zero, which helps the neural network process it eff
 
 ---
 
-### **Step 2: Neural Network Inference**
+### **Step 2: Neural network processing**
 
 The preprocessed tensor is fed through MobileNetV2:
 
@@ -53,11 +51,11 @@ interpreter.run(tensorImage.buffer, output)
 - Architecture: MobileNetV2 (53 layers, 3.4M parameters)
 - Output: 1000 probabilities, one for each ImageNet class
 
-The network extracts features through convolutional layers and outputs a probability distribution where all values sum to 1.
+The network extracts features through its layers and outputs a probability distribution where all values sum to 1.
 
 ---
 
-### **Step 3: Results Processing**
+### **Step 3: Results selection**
 
 Sort predictions by confidence and take the top 5:
 
@@ -82,11 +80,11 @@ cocker spaniel: 3%
 
 ---
 
-### **Step 4: UI Display**
+### **Step 4: UI display**
 
 Results are shown in a Material Design 3 bottom sheet with:
 - Image preview
-- Inference time in milliseconds
+- Processing time in milliseconds
 - Top 5 predictions with confidence bars
 
 The app uses MVVM architecture with Jetpack Compose for reactive UI updates:

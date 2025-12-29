@@ -25,17 +25,17 @@ import com.jan.imageclassification.ClassificationResult
 
 /**
  * Displays the classification results in a bottom sheet.
- * Shows the image, inference time, and top 5 predictions with confidence bars.
+ * Shows the image, processing time, and top 5 predictions with confidence bars.
  *
  * @param bitmap The classified image to display
  * @param results List of top predictions
- * @param inferenceTime How long classification took in milliseconds
+ * @param processingTime How long classification took in milliseconds
  */
 @Composable
 fun ResultsBottomSheet(
     bitmap: Bitmap,
     results: List<ClassificationResult>,
-    inferenceTime: Long
+    processingTime: Long
 ) {
     Column(
         modifier = Modifier
@@ -60,7 +60,7 @@ fun ResultsBottomSheet(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Inference time: ${inferenceTime}ms",
+            text = "Processing time: ${processingTime}ms",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 16.dp)
