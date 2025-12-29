@@ -2,6 +2,8 @@
 
 A simple Android app that classifies images using TensorFlow Lite and MobileNetV2. Everything runs on-device with no internet required.
 
+https://github.com/user-attachments/assets/aef02b85-367e-4b89-9e56-22fa54f19a64
+
 ## How it works
 
 This app transforms images into AI predictions through a 4-step pipeline:
