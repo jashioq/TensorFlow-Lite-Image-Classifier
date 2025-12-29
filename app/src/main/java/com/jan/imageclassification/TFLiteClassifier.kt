@@ -2,15 +2,15 @@ package com.jan.imageclassification
 
 import android.content.Context
 import android.graphics.Bitmap
-import org.tensorflow.lite.Interpreter
-import java.io.BufferedReader
-import java.io.FileInputStream
-import java.io.InputStreamReader
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.nio.MappedByteBuffer
-import java.nio.channels.FileChannel
 import androidx.core.graphics.scale
+import org.tensorflow.lite.DataType
+import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.support.common.FileUtil
+import org.tensorflow.lite.support.image.ImageProcessor
+import org.tensorflow.lite.support.image.TensorImage
+import org.tensorflow.lite.support.common.ops.NormalizeOp
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 /**
  * Handles loading and running the TensorFlow Lite image classification model.
@@ -19,8 +19,12 @@ import androidx.core.graphics.scale
  * @param context Used to access the model and labels files from assets
  */
 class TFLiteClassifier(private val context: Context) {
-    private var interpreter: Interpreter? = null
-    private var labels: List<String> = emptyList()
+    private lateinit var interpreter: Interpreter
+    private lateinit var labels: List<String>
+
+    private val imageProcessor = ImageProcessor.Builder()
+        .add(NormalizeOp(IMAGE_MEAN, IMAGE_STD))
+        .build()
 
     companion object {
         // Model expects 224x224 RGB images
@@ -44,32 +48,11 @@ class TFLiteClassifier(private val context: Context) {
 
     /**
      * Loads the TFLite model from assets and sets up the interpreter.
-     * Uses 4 threads for faster inference on multi-core devices.
      */
     private fun loadModel() {
-        try {
-            val modelFile = loadModelFile()
-            val options = Interpreter.Options()
-            options.setNumThreads(4)
-            interpreter = Interpreter(modelFile, options)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    /**
-     * Maps the model file directly into memory for efficient loading.
-     * This avoids copying the entire file into RAM.
-     *
-     * @return Memory-mapped buffer containing the model
-     */
-    private fun loadModelFile(): MappedByteBuffer {
-        val fileDescriptor = context.assets.openFd(MODEL_PATH)
-        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
-        val fileChannel = inputStream.channel
-        val startOffset = fileDescriptor.startOffset
-        val declaredLength = fileDescriptor.declaredLength
-        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
+        val model = FileUtil.loadMappedFile(context, MODEL_PATH)
+        val options = Interpreter.Options()
+        interpreter = Interpreter(model, options)
     }
 
     /**
@@ -77,35 +60,31 @@ class TFLiteClassifier(private val context: Context) {
      * Each line corresponds to one of the 1000 output classes.
      */
     private fun loadLabels() {
-        try {
-            labels = BufferedReader(InputStreamReader(context.assets.open(LABELS_PATH)))
-                .readLines()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        labels = BufferedReader(InputStreamReader(context.assets.open(LABELS_PATH)))
+            .readLines()
     }
 
     /**
      * Runs the image through the model and returns predictions.
      *
-     * @param bitmap The image to classify (any size, will be resized)
+     * @param bitmap The image to classify
      * @return Pair of (top 5 predictions, inference time in ms)
      */
     fun classify(bitmap: Bitmap): Pair<List<ClassificationResult>, Long> {
-        if (interpreter == null || labels.isEmpty()) {
-            return emptyList<ClassificationResult>() to 0L
-        }
-
-        val startTime = System.currentTimeMillis()
-
         // Resize to what the model expects
         val scaledBitmap = bitmap.scale(INPUT_SIZE, INPUT_SIZE)
-        val inputBuffer = convertBitmapToByteBuffer(scaledBitmap)
+
+        // Load bitmap into TensorImage and apply preprocessing
+        var tensorImage = TensorImage(DataType.UINT8)
+        tensorImage.load(scaledBitmap)
+        tensorImage = imageProcessor.process(tensorImage)
 
         // Output is 1000 probabilities, one for each ImageNet class
         val output = Array(1) { FloatArray(labels.size) }
 
-        interpreter?.run(inputBuffer, output)
+        val startTime = System.currentTimeMillis()
+
+        interpreter.run(tensorImage.buffer, output)
 
         val inferenceTime = System.currentTimeMillis() - startTime
 
@@ -113,7 +92,7 @@ class TFLiteClassifier(private val context: Context) {
         val results = output[0]
             .mapIndexed { index, confidence ->
                 ClassificationResult(
-                    label = if (index < labels.size) labels[index] else "Unknown",
+                    label = labels[index],
                     confidence = confidence
                 )
             }
@@ -121,45 +100,5 @@ class TFLiteClassifier(private val context: Context) {
             .take(MAX_RESULTS)
 
         return results to inferenceTime
-    }
-
-    /**
-     * Converts a bitmap into the format the model expects.
-     * Extracts RGB values, normalizes them to [-1, 1], and packs into a ByteBuffer.
-     *
-     * @param bitmap The 224x224 image to convert
-     * @return ByteBuffer ready to feed into the model
-     */
-    private fun convertBitmapToByteBuffer(bitmap: Bitmap): ByteBuffer {
-        val byteBuffer = ByteBuffer.allocateDirect(4 * INPUT_SIZE * INPUT_SIZE * PIXEL_SIZE)
-        byteBuffer.order(ByteOrder.nativeOrder())
-
-        val intValues = IntArray(INPUT_SIZE * INPUT_SIZE)
-        bitmap.getPixels(intValues, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-
-        // Extract RGB channels and normalize
-        var pixel = 0
-        for (i in 0 until INPUT_SIZE) {
-            for (j in 0 until INPUT_SIZE) {
-                val value = intValues[pixel++]
-
-                // Red channel
-                byteBuffer.putFloat(((value shr 16 and 0xFF) - IMAGE_MEAN) / IMAGE_STD)
-                // Green channel
-                byteBuffer.putFloat(((value shr 8 and 0xFF) - IMAGE_MEAN) / IMAGE_STD)
-                // Blue channel
-                byteBuffer.putFloat(((value and 0xFF) - IMAGE_MEAN) / IMAGE_STD)
-            }
-        }
-
-        return byteBuffer
-    }
-
-    /**
-     * Releases the interpreter resources. Call this when done classifying.
-     */
-    fun close() {
-        interpreter?.close()
-        interpreter = null
     }
 }
