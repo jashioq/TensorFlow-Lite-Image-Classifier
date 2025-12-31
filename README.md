@@ -76,6 +76,8 @@ Example output:
 golden retriever: 89%
 Labrador retriever: 5%
 cocker spaniel: 3%
+Irish setter: 2%
+Chesapeake Bay retriever: 1%
 ```
 
 ---
